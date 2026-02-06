@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ГИС Мониторинга ЖКХ г. Семей</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-bg: #0f172a;
+            --secondary-bg: #1e293b;
+            --accent-bg: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border-color: #475569;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--accent-bg) 100%);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--info) 0%, #06b6d4 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .search-container {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 320px;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--accent-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--info);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+        }
+        
+        .content {
+            flex: 1;
+            position: relative;
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+            z-index: 999;
+        }
+        
+        .sidebar h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .control-group {
+            margin-bottom: 2rem;
+        }
+        
+        .control-group h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .checkbox-item:hover {
+            background: rgba(51, 65, 85, 0.5);
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .checkbox.checked {
+            background: var(--info);
+            border-color: var(--info);
+        }
+        
+        .checkbox.checked::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 0px;
+            width: 6px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+        
+        .legend {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .stats-value {
+            font-weight: 600;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 350px;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .info-panel.visible {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .info-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .info-field {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 6px;
+        }
+        
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        
+        .info-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.75rem;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            background: var(--secondary-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        
+        .leaflet-popup-tip {
+            background: var(--secondary-bg);
+        }
+        
+        .popup-content {
+            padding: 0.5rem;
+            min-width: 200px;
+        }
+        
+        .popup-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        
+        .popup-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .popup-value {
+            font-weight: 600;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--secondary-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            text-align: center;
+            z-index: 10000;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--info);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Загрузка данных...</div>
+    </div>
+
+    <div class="main-container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">СМ</div>
+                <div class="header-title">
+                    <h1>ГИС Мониторинга ЖКХ г. Семей</h1>
+                    <p>Интерактивная карта жилого фонда и управляющих организаций</p>
+                </div>
+            </div>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Поиск по адресу или району..." id="searchInput">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </header>
+
+        <div class="content">
+            <aside class="sidebar">
+                <h2>Управление слоями</h2>
+
+                <div class="control-group">
+                    <h3>Слои карты</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <div class="checkbox checked" data-layer="districts"></div>
+                            <span>Административные районы</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <div class="checkbox checked" data-layer="buildings"></div>
+                            <span>Многоквартирные дома</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <div class="checkbox" data-layer="heatmap"></div>
+                            <span>Тепловая карта ОСИ</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Фильтр по типу управления</h3>
+                    <select class="select" id="managementFilter">
+                        <option value="all">Все типы управления</option>
+                        <option value="КСК">КСК (старая форма)</option>
+                        <option value="ПТ">ПТ (Простое товарищество)</option>
+                        <option value="ОСИ">ОСИ (Объединение собственников)</option>
+                        <option value="Без управления">Без управления</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <h3>Легенда</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ef4444;"></div>
+                            <span>КСК (старая форма)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #f59e0b;"></div>
+                            <span>ПТ (Простое товарищество)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #10b981;"></div>
+                            <span>ОСИ (Объединение собственников)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #6b7280;"></div>
+                            <span>Без управления</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Статистика</h3>
+                    <div class="stats-card">
+                        <div class="stats-item">
+                            <span>Всего домов:</span>
+                            <span class="stats-value" id="totalBuildings">-</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Отображается:</span>
+                            <span class="stats-value" id="filteredBuildings">-</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>ОСИ:</span>
+                            <span class="stats-value" style="color: var(--success);" id="osiBuildings">-</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>КСК:</span>
+                            <span class="stats-value" style="color: var(--danger);" id="kskBuildings">-</span>
+                        </div>
+                        <div class="stats-item">
+                            <span>Процент ОСИ:</span>
+                            <span class="stats-value" style="color: var(--info);" id="osiPercentage">-</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="info-panel" id="infoPanel">
+                    <div class="info-header">
+                        <div class="info-title">Информация о доме</div>
+                        <button class="close-btn" onclick="closeInfoPanel()">&times;</button>
+                    </div>
+                    <div id="infoPanelContent">
+                        <!-- Контент панели будет заполнен JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let map;
+        let buildingsData = [];
+        let districtsLayer;
+        let buildingsLayer;
+        let heatmapLayer;
+        let currentLayers = {
+            districts: true,
+            buildings: true,
+            heatmap: false
+        };
+        let currentFilter = 'all';
+        let currentSearch = '';
+        
+        // Данные районов (GeoJSON) - обновленные границы
+        const districtsData = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon", 
+                        "coordinates": [[
+                            [80.2020, 50.4200], [80.2200, 50.4200], [80.2200, 50.4350], [80.2020, 50.4350], [80.2020, 50.4200]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "batys", "name": "Жилой район Батыс", "population_2023": 92760,
+                        "population_2031": 79320, "population_2041": 98230, "population_2056": 120960
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.2200, 50.4250], [80.2450, 50.4250], [80.2450, 50.4400], [80.2200, 50.4400], [80.2200, 50.4250]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "aksay", "name": "Жилой район Аксай", "population_2023": 13010,
+                        "population_2031": 23270, "population_2041": 18930, "population_2056": 15690
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.2250, 50.4050], [80.2550, 50.4050], [80.2550, 50.4250], [80.2250, 50.4250], [80.2250, 50.4050]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "center", "name": "Общегородской центр", "population_2023": 65280,
+                        "population_2031": 53980, "population_2041": 75270, "population_2056": 62820
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.2620, 50.4050], [80.2850, 50.4050], [80.2850, 50.4270], [80.2620, 50.4270], [80.2620, 50.4050]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "shygys", "name": "Жилой район Шыгыс", "population_2023": 19370,
+                        "population_2031": 15840, "population_2041": 24740, "population_2056": 77350
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.2100, 50.3920], [80.2300, 50.3920], [80.2300, 50.4080], [80.2100, 50.4080], [80.2100, 50.3920]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "cemposelok", "name": "Жилой район Цемпоселок", "population_2023": 43570,
+                        "population_2031": 64210, "population_2041": 52240, "population_2056": 43580
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.1920, 50.4030], [80.2100, 50.4030], [80.2100, 50.4170], [80.1920, 50.4170], [80.1920, 50.4030]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "ushaktar", "name": "Жилой район Ушактар", "population_2023": 17390,
+                        "population_2031": 16060, "population_2041": 12960, "population_2056": 13540
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.1820, 50.3820], [80.2050, 50.3820], [80.2050, 50.3980], [80.1820, 50.3980], [80.1820, 50.3820]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "zhana_semey", "name": "Жилой район Жана Семей", "population_2023": 49930,
+                        "population_2031": 49080, "population_2041": 39790, "population_2056": 33160
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [80.2420, 50.3720], [80.2650, 50.3720], [80.2650, 50.3880], [80.2420, 50.3880], [80.2420, 50.3720]
+                        ]]
+                    },
+                    "properties": {
+                        "id": "suyk_bulak", "name": "Жилой район Суык Булак", "population_2023": 6820,
+                        "population_2031": 38230, "population_2041": 62830, "population_2056": 92900
+                    }
+                }
+            ]
+        };
+        
+        // Цвета для типов управления
+        const managementColors = {
+            'КСК': '#ef4444',
+            'ПТ': '#f59e0b', 
+            'ОСИ': '#10b981',
+            'Без управления': '#6b7280'
+        };
+        
+        // Загрузка данных зданий с исправленными координатами
+        function loadBuildingsData() {
+            // Зоны реальной застройки (избегаем реки, парков, промзон)
+            const residentialZones = {
+                'Общегородской центр': [
+                    {lat_min: 50.4120, lat_max: 50.4180, lon_min: 80.2350, lon_max: 80.2450},
+                    {lat_min: 50.4080, lat_max: 50.4140, lon_min: 80.2400, lon_max: 80.2520},
+                    {lat_min: 50.4160, lat_max: 50.4220, lon_min: 80.2280, lon_max: 80.2380}
+                ],
+                'Жилой район Цемпоселок': [
+                    {lat_min: 50.3950, lat_max: 50.4020, lon_min: 80.2120, lon_max: 80.2200},
+                    {lat_min: 50.3980, lat_max: 50.4050, lon_min: 80.2200, lon_max: 80.2280}
+                ],
+                'Жилой район Батыс': [
+                    {lat_min: 50.4200, lat_max: 50.4280, lon_min: 80.2020, lon_max: 80.2120},
+                    {lat_min: 50.4250, lat_max: 50.4320, lon_min: 80.2080, lon_max: 80.2180}
+                ],
+                'Жилой район Шыгыс': [
+                    {lat_min: 50.4120, lat_max: 50.4180, lon_min: 80.2650, lon_max: 80.2750},
+                    {lat_min: 50.4180, lat_max: 50.4240, lon_min: 80.2700, lon_max: 80.2800}
+                ],
+                'Жилой район Аксай': [
+                    {lat_min: 50.4280, lat_max: 50.4340, lon_min: 80.2250, lon_max: 80.2350},
+                    {lat_min: 50.4320, lat_max: 50.4380, lon_min: 80.2300, lon_max: 80.2400}
+                ],
+                'Жилой район Ушактар': [
+                    {lat_min: 50.4050, lat_max: 50.4120, lon_min: 80.1950, lon_max: 80.2050},
+                    {lat_min: 50.4080, lat_max: 50.4150, lon_min: 80.1980, lon_max: 80.2080}
+                ],
+                'Жилой район Жана Семей': [
+                    {lat_min: 50.3850, lat_max: 50.3920, lon_min: 80.1850, lon_max: 80.1950},
+                    {lat_min: 50.3880, lat_max: 50.3950, lon_min: 80.1920, lon_max: 80.2020}
+                ],
+                'Жилой район Суык Булак': [
+                    {lat_min: 50.3750, lat_max: 50.3820, lon_min: 80.2450, lon_max: 80.2550},
+                    {lat_min: 50.3780, lat_max: 50.3850, lon_min: 80.2500, lon_max: 80.2600}
+                ]
+            };
+            
+            const districtAddresses = {
+                'Общегородской центр': ['ул. Абая', 'ул. Шакарима', 'ул. Гоголя', 'пр. Н. Назарбаева', 'ул. Ленина'],
+                'Жилой район Цемпоселок': ['ул. Цементная', 'ул. Строительная', 'ул. Рабочая', 'ул. Индустриальная'],
+                'Жилой район Батыс': ['ул. Западная', 'ул. Молодежная', 'ул. Новая', 'ул. Мира'],
+                'Жилой район Шыгыс': ['ул. Восточная', 'ул. Солнечная', 'ул. Утренняя', 'ул. Рассветная'],
+                'Жилой район Аксай': ['ул. Аксайская', 'ул. Береговая', 'ул. Речная', 'ул. Зеленая'],
+                'Жилой район Ушактар': ['ул. Ушактарская', 'ул. Северная', 'ул. Лесная', 'ул. Парковая'],
+                'Жилой район Жана Семей': ['ул. Жана Семей', 'ул. Новостройка', 'ул. Современная', 'ул. Перспективная'],
+                'Жилой район Суык Булак': ['ул. Суык Булак', 'ул. Источная', 'ул. Родниковая', 'ул. Ключевая']
+            };
+            
+            const targetCounts = {
+                'Общегородской центр': 60,
+                'Жилой район Цемпоселок': 40,
+                'Жилой район Батыс': 30,
+                'Жилой район Шыгыс': 25,
+                'Жилой район Аксай': 15,
+                'Жилой район Ушактар': 15,
+                'Жилой район Жана Семей': 20,
+                'Жилой район Суык Булак': 15
+            };
+            
+            let buildingId = 1000;
+            
+            Object.entries(targetCounts).forEach(([district, count]) => {
+                const zones = residentialZones[district] || residentialZones['Общегородской центр'];
+                const streets = districtAddresses[district] || ['ул. Центральная'];
+                
+                for (let i = 0; i < count; i++) {
+                    const zone = zones[Math.floor(Math.random() * zones.length)];
+                    const lat = zone.lat_min + Math.random() * (zone.lat_max - zone.lat_min);
+                    const lon = zone.lon_min + Math.random() * (zone.lon_max - zone.lon_min);
+                    
+                    // Определяем тип управления с учетом специфики района
+                    let mgmtType;
+                    const rand = Math.random();
+                    
+                    if (district === 'Жилой район Шыгыс' || district === 'Жилой район Батыс') {
+                        // Прогрессивные районы - больше ОСИ
+                        if (rand < 0.30) mgmtType = 'ОСИ';
+                        else if (rand < 0.40) mgmtType = 'ПТ';
+                        else if (rand < 0.50) mgmtType = 'Без управления';
+                        else mgmtType = 'КСК';
+                    } else if (district === 'Жилой район Жана Семей' || district === 'Жилой район Суык Булак') {
+                        // Новые районы - современные формы
+                        if (rand < 0.25) mgmtType = 'ОСИ';
+                        else if (rand < 0.40) mgmtType = 'ПТ';
+                        else if (rand < 0.50) mgmtType = 'Без управления';
+                        else mgmtType = 'КСК';
+                    } else {
+                        // Старые районы - преобладают КСК
+                        if (rand < 0.10) mgmtType = 'ОСИ';
+                        else if (rand < 0.20) mgmtType = 'ПТ';
+                        else if (rand < 0.30) mgmtType = 'Без управления';
+                        else mgmtType = 'КСК';
+                    }
+                    
+                    const building = {
+                        id: `realistic_${buildingId}`,
+                        address: `${streets[Math.floor(Math.random() * streets.length)]}, ${Math.floor(Math.random() * 150) + 1}`,
+                        latitude: lat,
+                        longitude: lon,
+                        management_type: mgmtType,
+                        district: district,
+                        cluster_id: `cluster_${district.replace(/\s+/g, '_').toLowerCase()}_${Math.floor(i / 5)}`,
+                        residents_count: Math.floor(Math.random() * 200) + 50,
+                        year: Math.floor(Math.random() * 60) + 1960,
+                        floors: Math.floor(Math.random() * 10) + 2,
+                        apartments: Math.floor(Math.random() * 100) + 10,
+                        total_area: Math.floor(Math.random() * 5000) + 500,
+                        chairman: 'Не указан',
+                        phone: 'Не указан'
+                    };
+                    
+                    buildingsData.push(building);
+                    buildingId++;
+                }
+            });
+        }
+        
+        // Инициализация карты
+        function initMap() {
+            map = L.map('map').setView([50.4150, 80.2467], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Загрузка данных зданий
+            loadBuildingsData();
+            
+            // Создание слоев
+            createDistrictsLayer();
+            createBuildingsLayer();
+            
+            // Обновление статистики
+            updateStatistics();
+            
+            // Скрытие загрузки
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Создание слоя районов
+        function createDistrictsLayer() {
+            districtsLayer = L.geoJSON(districtsData, {
+                style: function(feature) {
+                    const stats = getDistrictStats(feature.properties.name);
+                    const opacity = currentLayers.heatmap ? 
+                        Math.min(stats.osiPercentage / 100 * 2, 0.8) : 0.3;
+                    
+                    return {
+                        color: '#374151',
+                        weight: 2,
+                        fillColor: currentLayers.heatmap ? '#3b82f6' : '#64748b',
+                        fillOpacity: opacity
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const stats = getDistrictStats(feature.properties.name);
+                    
+                    const popupContent = `
+                        <div class="popup-content">
+                            <div class="popup-title">${feature.properties.name}</div>
+                            <div class="popup-item">
+                                <span>Население 2023:</span>
+                                <span class="popup-value">${feature.properties.population_2023.toLocaleString()}</span>
+                            </div>
+                            <div class="popup-item">
+                                <span>Всего домов:</span>
+                                <span class="popup-value">${stats.total}</span>
+                            </div>
+                            <div class="popup-item">
+                                <span>ОСИ:</span>
+                                <span class="popup-value" style="color: var(--success)">${stats.osi}</span>
+                            </div>
+                            <div class="popup-item">
+                                <span>КСК:</span>
+                                <span class="popup-value" style="color: var(--danger)">${stats.ksk}</span>
+                            </div>
+                            <div class="popup-item">
+                                <span>Процент ОСИ:</span>
+                                <span class="popup-value" style="color: var(--info)">${stats.osiPercentage.toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    layer.bindPopup(popupContent);
+                }
+            });
+            
+            if (currentLayers.districts) {
+                districtsLayer.addTo(map);
+            }
+        }
+        
+        // Создание слоя зданий
+        function createBuildingsLayer() {
+            buildingsLayer = L.layerGroup();
+            
+            updateBuildingsLayer();
+            
+            if (currentLayers.buildings) {
+                buildingsLayer.addTo(map);
+            }
+        }
+        
+        // Обновление слоя зданий
+        function updateBuildingsLayer() {
+            buildingsLayer.clearLayers();
+            
+            const filteredBuildings = getFilteredBuildings();
+            
+            filteredBuildings.forEach(building => {
+                const marker = L.circleMarker([building.latitude, building.longitude], {
+                    radius: 6,
+                    color: managementColors[building.management_type],
+                    fillColor: managementColors[building.management_type],
+                    fillOpacity: 0.8,
+                    weight: 2
+                });
+                
+                const popupContent = `
+                    <div class="popup-content">
+                        <div class="popup-title">${building.address}</div>
+                        <div class="popup-item">
+                            <span>Тип управления:</span>
+                            <span class="popup-value" style="color: ${managementColors[building.management_type]}">${building.management_type}</span>
+                        </div>
+                        <div class="popup-item">
+                            <span>Район:</span>
+                            <span class="popup-value">${building.district}</span>
+                        </div>
+                        <div class="popup-item">
+                            <span>Год постройки:</span>
+                            <span class="popup-value">${building.year}</span>
+                        </div>
+                        <div class="popup-item">
+                            <span>Этажей:</span>
+                            <span class="popup-value">${building.floors}</span>
+                        </div>
+                        <div class="popup-item">
+                            <span>Квартир:</span>
+                            <span class="popup-value">${building.apartments}</span>
+                        </div>
+                        <div class="popup-item">
+                            <span>Жителей:</span>
+                            <span class="popup-value">${building.residents_count}</span>
+                        </div>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                
+                marker.on('click', function() {
+                    showBuildingInfo(building);
+                });
+                
+                buildingsLayer.addLayer(marker);
+            });
+        }
+        
+        // Получение отфильтрованных зданий
+        function getFilteredBuildings() {
+            return buildingsData.filter(building => {
+                const matchesManagement = currentFilter === 'all' || building.management_type === currentFilter;
+                const matchesSearch = currentSearch === '' || 
+                    building.address.toLowerCase().includes(currentSearch.toLowerCase()) ||
+                    building.district.toLowerCase().includes(currentSearch.toLowerCase());
+                return matchesManagement && matchesSearch;
+            });
+        }
+        
+        // Получение статистики района
+        function getDistrictStats(districtName) {
+            const districtBuildings = buildingsData.filter(b => b.district === districtName);
+            const total = districtBuildings.length;
+            const osi = districtBuildings.filter(b => b.management_type === 'ОСИ').length;
+            const ksk = districtBuildings.filter(b => b.management_type === 'КСК').length;
+            const pt = districtBuildings.filter(b => b.management_type === 'ПТ').length;
+            const noMgmt = districtBuildings.filter(b => b.management_type === 'Без управления').length;
+            
+            return {
+                total,
+                osi,
+                ksk, 
+                pt,
+                noMgmt,
+                osiPercentage: total > 0 ? (osi / total) * 100 : 0
+            };
+        }
+        
+        // Обновление статистики
+        function updateStatistics() {
+            const filteredBuildings = getFilteredBuildings();
+            const total = buildingsData.length;
+            const filtered = filteredBuildings.length;
+            const osi = buildingsData.filter(b => b.management_type === 'ОСИ').length;
+            const ksk = buildingsData.filter(b => b.management_type === 'КСК').length;
+            const osiPercentage = total > 0 ? (osi / total * 100).toFixed(1) : 0;
+            
+            document.getElementById('totalBuildings').textContent = total;
+            document.getElementById('filteredBuildings').textContent = filtered;
+            document.getElementById('osiBuildings').textContent = osi;
+            document.getElementById('kskBuildings').textContent = ksk;
+            document.getElementById('osiPercentage').textContent = osiPercentage + '%';
+        }
+        
+        // Показ информации о здании
+        function showBuildingInfo(building) {
+            const panel = document.getElementById('infoPanel');
+            const content = document.getElementById('infoPanelContent');
+            
+            content.innerHTML = `
+                <div class="info-field">
+                    <div class="info-label">Адрес</div>
+                    <div class="info-value">${building.address}</div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-field">
+                        <div class="info-label">Тип управления</div>
+                        <div class="info-value" style="color: ${managementColors[building.management_type]}">${building.management_type}</div>
+                    </div>
+                    <div class="info-field">
+                        <div class="info-label">Год постройки</div>
+                        <div class="info-value">${building.year}</div>
+                    </div>
+                </div>
+                
+                <div class="info-grid-3">
+                    <div class="info-field">
+                        <div class="info-label">Этажей</div>
+                        <div class="info-value">${building.floors}</div>
+                    </div>
+                    <div class="info-field">
+                        <div class="info-label">Квартир</div>
+                        <div class="info-value">${building.apartments}</div>
+                    </div>
+                    <div class="info-field">
+                        <div class="info-label">Жителей</div>
+                        <div class="info-value">${building.residents_count}</div>
+                    </div>
+                </div>
+                
+                <div class="info-field">
+                    <div class="info-label">Район</div>
+                    <div class="info-value">${building.district}</div>
+                </div>
+                
+                <div class="info-field">
+                    <div class="info-label">Общая площадь</div>
+                    <div class="info-value">${building.total_area.toLocaleString()} м²</div>
+                </div>
+            `;
+            
+            panel.classList.add('visible');
+        }
+        
+        // Закрытие панели информации
+        function closeInfoPanel() {
+            document.getElementById('infoPanel').classList.remove('visible');
+        }
+        
+        // Переключение слоев
+        function toggleLayer(layerName) {
+            currentLayers[layerName] = !currentLayers[layerName];
+            
+            switch(layerName) {
+                case 'districts':
+                    if (currentLayers.districts) {
+                        map.addLayer(districtsLayer);
+                    } else {
+                        map.removeLayer(districtsLayer);
+                    }
+                    break;
+                    
+                case 'buildings':
+                    if (currentLayers.buildings) {
+                        map.addLayer(buildingsLayer);
+                    } else {
+                        map.removeLayer(buildingsLayer);
+                    }
+                    break;
+                    
+                case 'heatmap':
+                    // Обновляем стиль районов для тепловой карты
+                    createDistrictsLayer();
+                    break;
+            }
+        }
+        
+        // Обработчики событий
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            
+            // Чекбоксы слоев
+            document.querySelectorAll('[data-layer]').forEach(checkbox => {
+                checkbox.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    this.classList.toggle('checked');
+                    toggleLayer(this.dataset.layer);
+                });
+            });
+            
+            // Фильтр управления
+            document.getElementById('managementFilter').addEventListener('change', function() {
+                currentFilter = this.value;
+                updateBuildingsLayer();
+                updateStatistics();
+            });
+            
+            // Поиск
+            document.getElementById('searchInput').addEventListener('input', function() {
+                currentSearch = this.value;
+                updateBuildingsLayer();
+                updateStatistics();
+            });
+        });
+    </script>
+</body>
+</html>
