@@ -1,0 +1,78 @@
+[
+  {
+    "id": "center_mgmt_0",
+    "address": "КСК «Абайский сад»",
+    "latitude": 50.412358834941784,
+    "longitude": 80.24782561068982,
+    "year": 1,
+    "material": null,
+    "floors": 0,
+    "apartments": 140,
+    "total_area": 7044.7,
+    "management_type": "КСК",
+    "district": "Общегородской центр",
+    "chairman": "Шушпанова Галина Анатольевна",
+    "phone": "87771534512"
+  },
+  {
+    "id": "center_mgmt_3",
+    "address": "ул. Козбагарова, 19",
+    "latitude": 50.408048972563435,
+    "longitude": 80.240170622954,
+    "year": 2013,
+    "material": "кирпич",
+    "floors": 6,
+    "apartments": 10,
+    "total_area": 1522.5,
+    "management_type": "КСК",
+    "district": "Общегородской центр"
+  },
+  {
+    "id": "center_mgmt_6",
+    "address": "ул. Аймаутова, 145",
+    "latitude": 50.410317526967255,
+    "longitude": 80.25110549189235,
+    "year": 1966,
+    "material": "кирпич",
+    "floors": 5,
+    "apartments": 60,
+    "total_area": 2532.1,
+    "management_type": "КСК",
+    "district": "Общегородской центр"
+  },
+  {
+    "id": "center_mgmt_21",
+    "address": "ул.Дулатова, 206 б",
+    "latitude": 50.412954701597165,
+    "longitude": 80.2440532578243,
+    "year": 1976,
+    "material": "кирпич",
+    "floors": 9,
+    "apartments": 169,
+    "management_type": "КСК",
+    "district": "Общегородской центр"
+  },
+  {
+    "id": "cement_1",
+    "address": "ул. Рыскулова, 87",
+    "latitude": 50.40191003234649,
+    "longitude": 80.21260736909208,
+    "year": 1985,
+    "material": "панель",
+    "floors": 10,
+    "apartments": 120,
+    "management_type": "КСК",
+    "district": "Жилой район Цемпоселок"
+  },
+  {
+    "id": "auezova_1",
+    "address": "ул.Селевина, 15",
+    "latitude": 50.4197678652223,
+    "longitude": 80.25738462698548,
+    "year": 1974,
+    "material": "кирпич",
+    "floors": 5,
+    "management_type": "КСК",
+    "district": "Проспект Ауэзова"
+  }
+]
